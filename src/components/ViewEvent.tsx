@@ -8,6 +8,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { Link, useNavigate } from 'react-router-dom';
 import { getEventById, updateEventData } from '../config/eventStorage';
+import ProgressiveImage from './ProgressiveImage';
 
 interface ViewEventProps {
   eventId: string;
@@ -18,6 +19,7 @@ interface ViewEventProps {
 interface EventImage {
   url: string;
   key: string;
+  thumbnailUrl?: string;
 }
 
 interface FaceRecordWithImage {
@@ -199,7 +201,8 @@ const ViewEvent: React.FC<ViewEventProps> = ({ eventId, selectedEvent, onEventSe
               .filter((item) => item.Key && item.Key.match(/\.(jpg|jpeg|png)$/i))
               .map((item) => ({
                 url: `https://${bucketName}.s3.amazonaws.com/${item.Key}`,
-                key: item.Key || ''
+                key: item.Key || '',
+                thumbnailUrl: `https://${bucketName}.s3.amazonaws.com/thumbnails/${item.Key}`
               }));
             allImages = [...allImages, ...imageItems];
           }
@@ -214,16 +217,15 @@ const ViewEvent: React.FC<ViewEventProps> = ({ eventId, selectedEvent, onEventSe
         const deduplicatedImages = deduplicateImages(allImages);
         setImages(deduplicatedImages);
         setError(null);
-        setLoading(false);
       } else if (fetchError) {
         throw fetchError;
       } else {
         setError('No images found for this event.');
-        setLoading(false);
       }
     } catch (error: any) {
       console.error('Error fetching event images:', error);
       setError(error.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -516,11 +518,11 @@ const ViewEvent: React.FC<ViewEventProps> = ({ eventId, selectedEvent, onEventSe
                   toggleHeaderFooter(false);
                 }}
               >
-                <img
+                <ProgressiveImage
                   src={image.url}
+                  thumbnailSrc={image.thumbnailUrl}
                   alt={`Event photo ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
+                  className="w-full h-full"
                 />
                 <button
                   onClick={(e) => {
@@ -536,7 +538,7 @@ const ViewEvent: React.FC<ViewEventProps> = ({ eventId, selectedEvent, onEventSe
           </div>
         </div>
 
-        {images.length === 0 && (
+        {images.length === 0 && !loading && (
           <div className="text-center py-16 bg-gray-50 rounded-lg">
             <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-xl text-gray-600">No images found for this event</p>
@@ -555,10 +557,11 @@ const ViewEvent: React.FC<ViewEventProps> = ({ eventId, selectedEvent, onEventSe
             }}
           >
             <div className="relative bg-white rounded-lg shadow-xl max-w-[800px] max-h-[600px] w-full mx-auto" onClick={e => e.stopPropagation()}>
-              <img
+              <ProgressiveImage
                 src={selectedImage.url}
+                thumbnailSrc={selectedImage.thumbnailUrl}
                 alt="Enlarged event photo"
-                className="w-full h-full object-contain rounded-lg"
+                className="w-full h-full rounded-lg"
                 style={{ maxHeight: 'calc(600px - 4rem)' }}
               />
               <button
@@ -578,7 +581,6 @@ const ViewEvent: React.FC<ViewEventProps> = ({ eventId, selectedEvent, onEventSe
                 className="absolute bottom-4 right-4 p-2 rounded-full bg-black/10 text-white hover:bg-black/70 transition-colors duration-200 flex items-center gap-2"
               >
                 <Download className="w-6 h-6" />
-                
               </button>
             </div>
           </div>
