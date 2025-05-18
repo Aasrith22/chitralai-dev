@@ -7,7 +7,18 @@ import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, ScanComma
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'https://accounts.google.com',
+    'https://*.googleusercontent.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+}));
 
 const s3 = new AWS.S3({
   region: process.env.VITE_AWS_REGION,
@@ -31,15 +42,16 @@ app.get('/api/runtime-env', (req, res) => {
   const runtimeVariables = {
     VITE_AWS_REGION: process.env.VITE_AWS_REGION,
     VITE_S3_BUCKET_NAME: process.env.VITE_S3_BUCKET_NAME,
+    VITE_GOOGLE_CLIENT_ID: process.env.VITE_GOOGLE_CLIENT_ID,
+    // WARNING: The following are sensitive and should only be sent if you trust the frontend environment.
     VITE_AWS_ACCESS_KEY_ID: process.env.VITE_AWS_ACCESS_KEY_ID,
     VITE_AWS_SECRET_ACCESS_KEY: process.env.VITE_AWS_SECRET_ACCESS_KEY,
-    // IMPORTANT: Add other NON-SENSITIVE environment variables here.
-    // DO NOT add sensitive keys like AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY.
   };
   // Log to backend console for debugging
   console.log('[presign-server.js] /api/runtime-env preparing to send:');
   console.log('[presign-server.js] Region:', runtimeVariables.VITE_AWS_REGION);
   console.log('[presign-server.js] Bucket:', runtimeVariables.VITE_S3_BUCKET_NAME);
+  console.log('[presign-server.js] Google Client ID (first 5 chars):', runtimeVariables.VITE_GOOGLE_CLIENT_ID ? runtimeVariables.VITE_GOOGLE_CLIENT_ID.substring(0,5) : 'MISSING');
   console.log('[presign-server.js] Access Key ID (first 5 chars):', runtimeVariables.VITE_AWS_ACCESS_KEY_ID ? runtimeVariables.VITE_AWS_ACCESS_KEY_ID.substring(0,5) : 'MISSING');
   console.log('[presign-server.js] Secret Key provided:', runtimeVariables.VITE_AWS_SECRET_ACCESS_KEY ? 'Yes' : 'No_MISSING');
 
@@ -181,6 +193,11 @@ app.get('/api/organizations/by-code/:organizationCode', async (req, res) => {
 
 app.get('/api/google-client-id', (req, res) => {
   res.json({ clientId: process.env.VITE_GOOGLE_CLIENT_ID });
+});
+
+// Add a health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 const PORT = 3001;

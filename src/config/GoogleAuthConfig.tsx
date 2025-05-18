@@ -1,15 +1,14 @@
 /** @jsxImportSource react */
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import React, { useEffect, useState } from "react";
+import { API_BASE } from './apiBase';
 
 const ALLOWED_ORIGINS = [
-  'https://3dprinting.space',
-  'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:3000',
   'http://127.0.0.1:5173',
-  'https://main.d2egbkasraqmnr.amplifyapp.com',
-  'https://main.dlyhbjyn2h6lw.amplifyapp.com',
-  'https://chitra.netlify.app'
+  'https://accounts.google.com',
+  'https://*.googleusercontent.com'
 ];
 
 // Allow all origins in development mode
@@ -19,21 +18,37 @@ if (import.meta.env.DEV) {
 
 export const GoogleAuthConfig: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [clientId, setClientId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const currentOrigin = window.location.origin;
+    console.debug('[DEBUG] GoogleAuthConfig.tsx: Current origin:', currentOrigin);
+    
+    if (!ALLOWED_ORIGINS.includes(currentOrigin)) {
+      console.error(`Error: Current origin ${currentOrigin} is not in the allowed list for Google OAuth.`);
+      setError(`Origin ${currentOrigin} is not allowed for Google OAuth. Please contact support.`);
+      return;
+    }
+
     console.debug('[DEBUG] GoogleAuthConfig.tsx: Fetching Google OAuth Client ID from /api/google-client-id');
-    fetch('/api/google-client-id')
-      .then(res => res.json())
+    fetch(`${API_BASE}/api/google-client-id`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch client ID: ${res.status} ${res.statusText}`);
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.clientId) {
           console.debug('[DEBUG] GoogleAuthConfig.tsx: Google OAuth Client ID fetched. First 5 chars:', data.clientId.substring(0, 5));
+          setClientId(data.clientId);
         } else {
-          console.warn('[DEBUG] GoogleAuthConfig.tsx: Google OAuth Client ID not found in response.');
+          throw new Error('Google OAuth Client ID not found in response');
         }
-        setClientId(data.clientId);
       })
       .catch((err) => {
         console.error('[DEBUG] GoogleAuthConfig.tsx: Failed to fetch Google OAuth Client ID:', err);
+        setError(err.message);
         setClientId(null);
       });
   }, []);
@@ -119,8 +134,11 @@ export const GoogleAuthConfig: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => window.removeEventListener('message', handleOAuthError);
   }, []);
 
+  if (error) {
+    return <div className="error-message">Error: {error}</div>;
+  }
+
   if (clientId === null) {
-    // Optionally show a loading spinner or fallback
     return <div>Loading...</div>;
   }
 
@@ -129,6 +147,7 @@ export const GoogleAuthConfig: React.FC<{ children: React.ReactNode }> = ({ chil
       clientId={clientId}
       onScriptLoadError={() => {
         console.error("Google Sign-In script failed to load");
+        setError("Failed to load Google Sign-In. Please refresh the page.");
       }}
     >
       {children}

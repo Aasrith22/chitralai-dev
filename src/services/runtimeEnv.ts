@@ -24,7 +24,7 @@ async function fetchRuntimeEnvFromServer(): Promise<AppRuntimeEnv> {
   fetchPromise = fetch(apiEndpoint)
     .then(response => {
       if (!response.ok) {
-        throw new Error(`Failed to fetch runtime environment variables: ${response.statusText}`);
+        throw new Error(`Failed to fetch runtime environment variables: ${response.status} ${response.statusText}`);
       }
       return response.json();
     })

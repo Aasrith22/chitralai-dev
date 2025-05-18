@@ -60,15 +60,16 @@ export default defineConfig(({ mode }): UserConfig => {
       'global': 'globalThis',
       'import.meta.env.VITE_GOOGLE_CLIENT_ID': JSON.stringify(
         process.env.SHELL_VITE_GOOGLE_CLIENT_ID || env.VITE_GOOGLE_CLIENT_ID
-      )
+      ),
+      'import.meta.env.VITE_API_BASE': JSON.stringify(env.VITE_API_BASE || 'http://localhost:3001')
     },
     server: {
       proxy: {
         '/api': {
-          target: mode === 'development' ? 'http://localhost:3001' : '/.netlify/functions',
+          target: 'http://localhost:3001',
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, '')
+          rewrite: (path) => path
         },
       },
     },

@@ -5,6 +5,7 @@ import { Upload as UploadIcon, X, Download, ArrowLeft, Copy, Loader2, Camera, Sh
 import { QRCodeSVG } from 'qrcode.react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getUserEvents, getEventById, updateEventData } from '../config/eventStorage';
+import { API_BASE } from '../config/apiBase';
 
 // Add type declaration for directory upload attributes
 declare module 'react' {
@@ -93,7 +94,7 @@ const pollForCompressedImage = async (bucketUrl: string, compressedKey: string, 
 
 // Add this helper function for getting a pre-signed URL
 const getPresignedUrl = async (key: string, contentType: string): Promise<string> => {
-  const response = await fetch('/api/presign', {
+  const response = await fetch(`${API_BASE}/api/presign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, contentType })
