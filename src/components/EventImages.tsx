@@ -264,8 +264,8 @@ const EventImages = ({ eventId }: EventImagesProps) => {
         {images.map((image, index) => (
           <div key={image.key} className="relative group">
             <ProgressiveImage
-              compressedSrc={`https://${bucketName}.s3.amazonaws.com/compressed/${eventId}/${image.key.split('/').pop()}`}
-              originalSrc={image.url}
+              src={image.url}
+              thumbnailSrc={`https://${bucketName}.s3.amazonaws.com/compressed/${eventId}/${image.key.split('/').pop()}`}
               alt={`Event photo ${index + 1}`}
               className="w-full h-32 sm:h-48 object-cover rounded-lg shadow-md transition-transform duration-200 group-hover:scale-[1.02]"
             />
